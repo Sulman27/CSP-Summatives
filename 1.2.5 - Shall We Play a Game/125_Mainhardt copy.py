@@ -28,8 +28,10 @@ def start_screen():
     turt.penup()
     # center the rectangle at x=0, y=-50 with width 200 and height 50
     width, btn_height = 200, 50
-    start_x = width / 2
-    start_y = -50 - btn_height / 2
+    # center the rectangle at x=0, y=-50 -> top-left corner should be at (-width/2, -50 + btn_height/2)
+    start_x = -width / 2
+    start_y = -50 + btn_height / 2
+    turt.penup()
     turt.goto(start_x, start_y)
     turt.setheading(0)
     turt.pendown()

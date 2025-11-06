@@ -1,8 +1,8 @@
 import turtle as turt
-import math # for distance calculations
-import random as rand # for randomizing mine placement
+import math  # for distance calculations
+import random as rand  # for randomizing mine placement
 import os
-import tkinter as tk
+
 # Configuration
 GRID_ROWS = 8
 GRID_COLS = 8
@@ -15,12 +15,19 @@ screen = None
 drawer = None  # turtle used to draw cells
 writer = None  # turtle used to write text
 revealed = set()
-# Flags state: mapping (row,col) -> canvas image id
+# State for flags: map (row,col) -> dict with {'turtle': Turtle, 'stamp_id': int}
 flags = {}
-# Cached PhotoImage objects by path to avoid GC
-_flag_images = {}
-# default flag image path (change this to switch image)
-FLAG_IMAGE = os.path.join(os.path.dirname(__file__), "minesweeperflag.png")
+# Put your image filename here (prefer GIF if PNG doesn't show)
+FLAG_IMAGE = "minesweeperflag.png"
+
+
+def _flag_image_path():
+    """Return path to flag image: try same dir as script, but allow running interactively."""
+    try:
+        base = os.path.dirname(__file__)
+    except NameError:
+        base = os.getcwd()
+    return os.path.join(base, FLAG_IMAGE)
 
 
 def make_screen():
@@ -96,25 +103,44 @@ def handle_start_click(x, y):
 
 def start_game():
     # Clear and set up game screen
+    # Note: clearscreen resets many things. We'll re-create the screen's turtles & preload shape.
     screen.clearscreen()
     screen.title("Minesweeper - Game")
     screen.bgcolor("lightgray")
     screen.setup(width=SCREEN_WIDTH, height=SCREEN_HEIGHT)
 
     # recreate turtles
-    global drawer, writer, revealed
+    global drawer, writer, revealed, flags
     drawer = turt.Turtle(visible=False)
     writer = turt.Turtle(visible=False)
     drawer.speed(0)
     writer.speed(0)
     revealed = set()
+    flags = {}
+
+    # Try to register the flag image as a turtle shape now (preload)
+    path = _flag_image_path()
+    print("Attempting to load flag image from:", path)
+    try:
+        # Use a fixed shape name to check later
+        shape_name = "flagshape_image"
+        # register only if not already present
+        if shape_name not in screen.getshapes():
+            # register the file path directly; turtle often prefers GIF files.
+            screen.register_shape(shape_name, path)
+        # store chosen shape name on screen for later use
+        screen._flag_shape_name = shape_name
+        screen._flag_image_loaded = True
+    except Exception as e:
+        # If registration fails (common for non-GIF on some setups), mark as not loaded
+        print("Flag image registration failed:", e)
+        screen._flag_image_loaded = False
 
     draw_grid(GRID_ROWS, GRID_COLS, CELL_SIZE)
 
-    # bind grid click handlers: left = reveal, right = flag toggle
-    # Use onscreenclick with btn to distinguish buttons
-    screen.onscreenclick(handle_left_click, 1)
-    screen.onscreenclick(handle_right_click, 3)
+    # bind unified grid click handler for both left and right buttons
+    screen.onscreenclick(lambda x, y: handle_click(x, y, 1), 1)  # left click
+    screen.onscreenclick(lambda x, y: handle_click(x, y, 3), 3)  # right click
 
 
 def grid_origin(rows, cols, cell_size):
@@ -176,101 +202,82 @@ def reveal_cell(row, col):
     writer.write("X", align="center", font=("Arial", 14, "bold"))
 
 
-def handle_grid_click(x, y):
-    # Convert click to grid row/col
+def handle_click(x, y, btn=1):
+    """Unified handler for both left and right clicks."""
     x0, y0 = grid_origin(GRID_ROWS, GRID_COLS, CELL_SIZE)
     col = int((x - x0) // CELL_SIZE)
     row = int((y0 - y) // CELL_SIZE)
-    if 0 <= row < GRID_ROWS and 0 <= col < GRID_COLS:
+    if not (0 <= row < GRID_ROWS and 0 <= col < GRID_COLS):
+        return
+    if btn == 1:
         reveal_cell(row, col)
-
-
-def handle_left_click(x, y):
-    # left click = reveal
-    x0, y0 = grid_origin(GRID_ROWS, GRID_COLS, CELL_SIZE)
-    col = int((x - x0) // CELL_SIZE)
-    row = int((y0 - y) // CELL_SIZE)
-    if 0 <= row < GRID_ROWS and 0 <= col < GRID_COLS:
-        reveal_cell(row, col)
-
-
-def handle_right_click(x, y):
-    # right click = toggle flag image on the cell
-    x0, y0 = grid_origin(GRID_ROWS, GRID_COLS, CELL_SIZE)
-    col = int((x - x0) // CELL_SIZE)
-    row = int((y0 - y) // CELL_SIZE)
-    if 0 <= row < GRID_ROWS and 0 <= col < GRID_COLS:
+    elif btn == 3:
         toggle_flag(row, col)
 
 
-def _get_canvas_and_photo(path):
-    """Return (canvas, PhotoImage) for given path, caching PhotoImage to avoid GC."""
-    if not os.path.isfile(path):
-        # file not found: return None to signal missing image
-        return None, None
-    canvas = screen.getcanvas()
-    if path not in _flag_images:
-        # create PhotoImage and cache it
-        try:
-            _flag_images[path] = tk.PhotoImage(file=path)
-        except Exception:
-            # couldn't load image
-            _flag_images[path] = None
-    return canvas, _flag_images[path]
-
-
 def toggle_flag(row, col):
-    """Toggle flag image at (row, col). Uses tkinter canvas to place image centered in cell.
-    If FLAG_IMAGE is missing or cannot be loaded, this function will draw a simple red 'F' instead.
+    """Toggle a flag image at (row, col) using only turtle, no tkinter.
+    Stores per-cell {'turtle': Turtle, 'stamp_id': int} in flags to remove later.
     """
     key = (row, col)
+
+    # Don't allow flagging revealed cells
+    if (row, col) in revealed:
+        return
+
+    # Calculate center of the cell
     x0, y0 = grid_origin(GRID_ROWS, GRID_COLS, CELL_SIZE)
-    # center of cell in turtle coords
     cx = x0 + col * CELL_SIZE + CELL_SIZE / 2
     cy = y0 - row * CELL_SIZE - CELL_SIZE / 2
 
-    # If flag already present, remove it
+    # If already flagged, remove it by clearing the specific stamp
     if key in flags:
-        # flags[key] stores the canvas image id (int) or a placeholder writer mark
-        item = flags.pop(key)
-        canvas = screen.getcanvas()
+        info = flags.pop(key)
+        t = info.get("turtle")
+        sid = info.get("stamp_id")
         try:
-            canvas.delete(item)
+            if t is not None and sid is not None:
+                t.clearstamp(sid)  # remove that stamp only
+            if t is not None:
+                t.hideturtle()
+                t.clear()
+                t.reset()  # safe cleanup
+                # Avoid destroying the turtle object; we let GC handle it
         except Exception:
-            # if deletion fails, try clearing writer mark
+            # fallback: try redrawing grid to remove stray marks
             drawer.clear()
             draw_grid(GRID_ROWS, GRID_COLS, CELL_SIZE)
         return
 
-    # Try to place image
-    canvas, photo = _get_canvas_and_photo(FLAG_IMAGE)
-    if canvas and photo:
-        # convert turtle coords (cx,cy) to canvas pixel coords
-        canvas_x = cx + screen.window_width() / 2
-        canvas_y = screen.window_height() / 2 - cy
-        img_id = canvas.create_image(canvas_x, canvas_y, image=photo)
-        flags[key] = img_id
-    else:
-        # fallback: draw a red 'F' using a dedicated turtle writer and store placeholder
-        temp = turt.Turtle(visible=False)
-        temp.hideturtle()
-        temp.penup()
-        temp.goto(cx, cy - 8)
-        temp.color("red")
-        temp.write("F", align="center", font=("Arial", 16, "bold"))
-        # For fallback we cannot delete easily via canvas, so store the turtle object id
-        # We'll delete it by clearing and redrawing the grid when needed
-        flags[key] = temp.get_shapepoly() if hasattr(temp, 'get_shapepoly') else None
+    # Create a small turtle to stamp the flag image
+    flag_t = turt.Turtle(visible=False)
+    flag_t.penup()
+    flag_t.speed(0)
+    flag_t.goto(cx, cy)
+
+    # If image was registered successfully earlier, use it
+    if getattr(screen, "_flag_image_loaded", False) and hasattr(screen, "_flag_shape_name"):
+        shape_name = screen._flag_shape_name
+        try:
+            flag_t.shape(shape_name)
+            flag_t.showturtle()
+            stamp_id = flag_t.stamp()  # returns the stamp id
+            # store the stamp id and turtle for later removal
+            flags[key] = {"turtle": flag_t, "stamp_id": stamp_id}
+            return
+        except Exception as e:
+            print("Stamping shape failed:", e)
+            # fallthrough to drawing 'F'
+
+    # fallback: draw a visible 'F' using the writer turtle (if image unavailable)
+    writer.penup()
+    writer.goto(cx, cy - 8)
+    writer.color("red")
+    writer.write("F", align="center", font=("Arial", 16, "bold"))
+    # store a placeholder so toggle_flag can remove (we'll just clear/redraw grid when unflagging)
+    flags[key] = {"turtle": None, "stamp_id": None}
 
 
-def set_flag_image(path):
-    """Change the flag image used for flags. Path can be absolute or relative.
-    Call this before starting a game or while running to change subsequent flags.
-    """
-    global FLAG_IMAGE
-    FLAG_IMAGE = path
-    # preload if possible
-    _get_canvas_and_photo(path)
 # randomizing mine placement under each button that corresponds to a grid cell
 def place_mines(num_mines):
     mines = set()
@@ -281,9 +288,6 @@ def place_mines(num_mines):
     return mines
 
 
-
-
-
 def main():
     make_screen()
     start_screen()
@@ -292,4 +296,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

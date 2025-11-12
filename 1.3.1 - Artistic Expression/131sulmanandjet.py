@@ -10,20 +10,31 @@ letter_turtle = turt.Turtle(shape=letter_closed)
 letter_turtle.penup()
 letter_turtle.goto(0, 0)
 
-def afganistan_letter(x,y):
-    
+
+IraqWarLetter = turt.Turtle()
+IraqWarLetter.hideturtle()
+
+
+afghanistanWarLetter = turt.Turtle()
+afghanistanWarLetter.hideturtle()
+
+
+VietnamWarLetter = turt.Turtle()
+VietnamWarLetter.hideturtle()
+
 
 def change_letter(x, y):
     letter_turtle.clear()
     letter_turtle.shape(letter_open)
 
-    afghanistanWarLetter = turt.Turtle()
-    afghanistanWarLetter.hideturtle()
+   
     afghanistanWarLetter.penup()
     afghanistanWarLetter.goto(-150,200)
     afghanistanWarLetter.color("black")
     afghanistanWarLetter.write("Afghanistan War 2001-2014", align='center', font=('Arial', 20, 'normal'))
 
+
+#button for afghanistan war letter
     afghanistanCircle = turt.Turtle()   
     afghanistanCircle.shape("circle")
     afghanistanCircle.color("grey")
@@ -31,32 +42,53 @@ def change_letter(x, y):
     afghanistanCircle.goto(-295, 212)
     afghanistanCircle.onclick(afganistan_letter)
 
-    VietnamWarLetter = turt.Turtle()
-    VietnamWarLetter.hideturtle()
     VietnamWarLetter.penup()
     VietnamWarLetter.goto(-150,175)
     VietnamWarLetter.color("black")
     VietnamWarLetter.write("Vietnam War 1955-1975", align='center', font=('Arial', 20, 'normal'))
 
+#button for vietnam war letter
     vietnamCircle = turt.Turtle()   
     vietnamCircle.shape("circle")
     vietnamCircle.color("pink")
     vietnamCircle.penup()
     vietnamCircle.goto(-295, 187)
+    vietnamCircle.onclick(vietnamButton)
 
-
-    IraqWarLetter = turt.Turtle()
-    IraqWarLetter.hideturtle()
+ 
     IraqWarLetter.penup()
     IraqWarLetter.goto(-150, 145)
     IraqWarLetter.color("black")
     IraqWarLetter.write("Iraq War Letter 2003-2011", align='center', font=('Arial', 20, 'normal'))
 
+#button for iraq war letter
     iraqCircle = turt.Turtle()   
     iraqCircle.shape("circle")
     iraqCircle.color("green")
     iraqCircle.penup()
     iraqCircle.goto(-295, 157)
+    iraqCircle.onclick(iraqButton)
+
+#onclick function for afghanistan
+def afganistan_letter(x,y):
+    wn.clearscreen()
+    Afgnahistanwrite = turt.Turtle()
+    Afgnahistanwrite.hideturtle()
+    Afgnahistanwrite.write(veteran_letters[2]["letter"], align='center', font=('Arial', 16, 'normal'))
+
+#onclick function for iraq
+def iraqButton(x,y):
+    wn.clearscreen()
+    Iraqwrite = turt.Turtle()
+    Iraqwrite.hideturtle()
+    Iraqwrite.write(veteran_letters[1]["letter"], align='center', font=('Arial', 16, 'normal'))
+
+#onclick function for vietnam
+def vietnamButton(x,y):
+    wn.clearscreen()
+    Vietnamwrite = turt.Turtle()
+    Vietnamwrite.hideturtle()
+    Vietnamwrite.write(veteran_letters[0]["letter"], align='center', font=('Arial', 16, 'normal'))
 
 
 letter_turtle.onclick(change_letter)
@@ -103,5 +135,4 @@ A Nation in Your Debt"""
 # user clicks on opened envelope to read letter
 
 wn.mainloop()
-
 

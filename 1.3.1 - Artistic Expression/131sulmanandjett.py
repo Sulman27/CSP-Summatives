@@ -62,7 +62,7 @@ def afghanistan_letter(x, y):
 
     restart = turt.Turtle()
     restart.shape("square")
-    restart.color("red")
+    restart.color("biue")
     restart.shapesize(2)
     restart.penup()
     restart.goto(-300, -250)
@@ -179,12 +179,13 @@ def main():
     wn.addshape("closed_letter.gif")
     wn.addshape("openletter.gif")
 
-    # 🌀 For loop addition: show summary of letters available
+    # show a trigger warning
     all_wars = ""
     for letter in veteran_letters:
         years = next(iter(letter))
         all_wars += f"{letter[years]} ({years})\n"
-    turt.textinput("Available Letters", f"Trigger warning: The program includes mention of:\n{all_wars}")
+    turt.textinput("Available Letters", f"Trigger warning: The program includes mention of:\n{all_wars}" + "would you like to continue?")
+
 
     letter_turtle = turt.Turtle(shape="closed_letter.gif")
     letter_turtle.penup()

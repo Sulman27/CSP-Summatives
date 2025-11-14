@@ -62,7 +62,7 @@ def afghanistan_letter(x, y):
 
     restart = turt.Turtle()
     restart.shape("square")
-    restart.color("biue")
+    restart.color("blue")
     restart.shapesize(2)
     restart.penup()
     restart.goto(-300, -250)
@@ -90,7 +90,7 @@ def iraqButton(x, y):
 
     restart = turt.Turtle()
     restart.shape("square")
-    restart.color("red")
+    restart.color("blue")
     restart.shapesize(2)
     restart.penup()
     restart.goto(-300, -250)
@@ -118,7 +118,7 @@ def vietnamButton(x, y):
 
     restart = turt.Turtle()
     restart.shape("square")
-    restart.color("red")
+    restart.color("blue")
     restart.shapesize(2)
     restart.penup()
     restart.goto(-300, -250)
@@ -142,6 +142,8 @@ def change_letter(x, y):
     afghanistanCircle.penup()
     afghanistanCircle.goto(-295, 212)
     afghanistanCircle.onclick(afghanistan_letter)
+
+    
 
     # Vietnam button
     VietnamWarLetter.penup()
@@ -175,7 +177,7 @@ def main():
     wn = turt.Screen()
     wn.title("War Letters")
 
-    # Register images (make sure these files are in the same folder)
+
     wn.addshape("closed_letter.gif")
     wn.addshape("openletter.gif")
 

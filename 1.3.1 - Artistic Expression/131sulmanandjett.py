@@ -186,7 +186,7 @@ def main():
     for letter in veteran_letters:
         years = next(iter(letter))
         all_wars += f"{letter[years]} ({years})\n"
-    turt.textinput("Available Letters", f"Trigger warning: The program includes mention of:\n{all_wars}" + "would you like to continue?")
+    turt.textinput("Available Letters", f"wars mentioned: :\n{all_wars}" + " please press OK")
 
 
     letter_turtle = turt.Turtle(shape="closed_letter.gif")
